@@ -1,0 +1,134 @@
+---
+title: "glacier_retreat"
+author: "Justin Lingg-Laham"
+format: html
+editor: visual
+---
+```{r}
+getwd()
+```
+
+```{r}
+glacier_30 <- read.csv("./data/raw/fox_glacier.csv", sep = ",", header = TRUE)
+glacier_30
+```
+
+```{r}
+# =========================
+# Fox Glacier: Clean analysis (R)
+# =========================
+
+library(tidyverse)
+library(lubridate)
+
+# ---- 1) Load ----
+# setwd("...") # optional
+
+
+# ---- 2) Basic cleaning / types ----
+df2 <- glacier_30 %>%
+  mutate(
+    year = as.integer(year),
+    # some exports come as TRUE/FALSE or 1/0; normalize
+    doSnowline = case_when(
+      doSnowline %in% c(TRUE, "TRUE", 1, "1") ~ TRUE,
+      TRUE ~ FALSE
+    ),
+    ok_overall = case_when(
+      ok_overall %in% c(TRUE, "TRUE", 1, "1") ~ TRUE,
+      TRUE ~ FALSE
+    ),
+    ok_clear = case_when(
+      ok_clear %in% c(TRUE, "TRUE", 1, "1") ~ TRUE,
+      TRUE ~ FALSE
+    )
+  )
+
+# ---- 3) Define "physically clean" subsets ----
+# Snowline subset (strict)
+snow_cf_thr <- 0.20  # if too few years remain, set to 0.15
+snow_min_km2 <- 5
+
+snow_df <- df2 %>%
+  filter(
+    doSnowline == TRUE,
+    !is.na(snowline_edge_m),
+    nSnow >= 3,
+    clearFraction_snow >= snow_cf_thr,
+    !is.na(glacier_km2),
+    glacier_km2 >= snow_min_km2
+  )
+
+# Area subset (clean)
+area_df <- df2 %>%
+  filter(
+    ok_overall == TRUE,
+    !is.na(glacier_km2)
+  )
+
+cat("Years total:", nrow(df2), "\n")
+cat("Snowline clean years:", nrow(snow_df), " (unique years:", n_distinct(snow_df$year), ")\n")
+cat("Area clean years:", nrow(area_df), " (unique years:", n_distinct(area_df$year), ")\n")
+
+# ---- 4) Trend stats ----
+# Snowline trend (m/year)
+snow_lm <- lm(snowline_edge_m ~ year, data = snow_df)
+print(summary(snow_lm))
+
+# Area trend (km2/year)
+area_lm <- lm(glacier_km2 ~ year, data = area_df)
+print(summary(area_lm))
+
+# Relationship: area vs snowline
+rel_lm <- lm(glacier_km2 ~ snowline_edge_m, data = snow_df)
+print(summary(rel_lm))
+
+# Correlation
+cor_val <- cor(snow_df$glacier_km2, snow_df$snowline_edge_m, use = "complete.obs")
+cat("Correlation (glacier_km2 vs snowline_edge_m):", round(cor_val, 3), "\n")
+
+# ---- 5) Plots ----
+
+# (A) Snowline time series
+p1 <- ggplot(snow_df, aes(x = year, y = snowline_edge_m)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(
+    title = "Fox Glacier: Snowline proxy (Jan–Mar, quality-filtered)",
+    x = "Year",
+    y = "Snowline elevation (m)"
+  ) +
+  theme_minimal()
+
+# (B) Glacier area time series
+p2 <- ggplot(area_df, aes(x = year, y = glacier_km2)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(
+    title = "Fox Glacier: Snow/ice area proxy (Aug–May, quality-filtered)",
+    x = "Year",
+    y = "Area (km²)"
+  ) +
+  theme_minimal()
+
+# (C) Area vs Snowline (mechanism plot)
+p3 <- ggplot(snow_df, aes(x = snowline_edge_m, y = glacier_km2)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(
+    title = "Fox Glacier: Area vs Snowline (quality-filtered)",
+    x = "Snowline elevation (m)",
+    y = "Area (km²)"
+  ) +
+  theme_minimal()
+
+# ---- 6) Save outputs ----
+ggsave("fox_snowline_timeseries.png", p1, width = 9, height = 5, dpi = 200)
+ggsave("fox_area_timeseries.png", p2, width = 9, height = 5, dpi = 200)
+ggsave("fox_area_vs_snowline.png", p3, width = 7, height = 6, dpi = 200)
+
+# Optional: export cleaned tables
+write_csv(snow_df, "fox_snowline_clean.csv")
+write_csv(area_df, "fox_area_clean.csv")
+```
+
