@@ -1,5 +1,5 @@
 # Glacial-Retreat-Remote-Sensing-Application
-Detection of the glacial retreat for the Fox Glacier in New Zealand, using satellite remote sensing (Landsat 4-8, ERA5-Land) with Google Earth Engine and statistical analysis in R.
+Detection of the glacial retreat for the Fox Glacier in New Zealand, using satellite remote sensing (Landsat 4-8, ERA5-Land, NASADEM 30m) with Google Earth Engine and statistical analysis in R.
 
 This Repository contains the complete analysis workflow for investigating the Glacial Retreat, with an Focus on area-loss, temperature dependency and redistribution of snowmass trough an hypsometry-analysis using satellite based remote sensing data. 
 
