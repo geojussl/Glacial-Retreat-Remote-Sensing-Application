@@ -874,7 +874,6 @@ p_anom_ts_up <- ggplot(area_anom, aes(x = year, y = area_anom)) +
     plot.title = element_text(face = "bold"),
     panel.grid.minor = element_blank()
   )
-p_anom_ts_up
 ```
 
 ![](glacier_test_files/figure-commonmark/unnamed-chunk-11-1.png)
@@ -1272,3 +1271,4 @@ p_aar_simple
 ```
 
 ![](glacier_test_files/figure-commonmark/unnamed-chunk-15-1.png)
+
